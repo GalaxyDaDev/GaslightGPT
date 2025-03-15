@@ -22,8 +22,8 @@ const FacialDetection = () => {
   }, []);
 
   const loadModel = async () => {
-    const model = await faceLandmarksDetection.load(
-      faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+    const model = await faceLandmarksDetection.createDetector(
+      faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh
     );
     detectFace(model);
   };
@@ -34,13 +34,37 @@ const FacialDetection = () => {
 
     const detect = async () => {
       if (!videoRef.current) return;
-      const predictions = await model.estimateFaces({ input: videoRef.current });
+      const faces = await model.estimateFaces(videoRef.current);
 
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
 
-      if (predictions.length > 0) {
-        setMood("Ugly 😭"); // 😂 Roasting the user
+      if (faces.length > 0) {
+        faces.forEach((face) => {
+          const keypoints = face.keypoints;
+          if (keypoints.length > 0) {
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            keypoints.forEach((point, index) => {
+              if (index === 0) ctx.moveTo(point.x, point.y);
+              else ctx.lineTo(point.x, point.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+          }
+        });
+
+        // Simple mood roasting logic
+        const randomMoods = [
+          "Bro, why you looking like that? 💀",
+          "You look tired... or just ugly? 😂",
+          "Damn, ever heard of beauty sleep? 😭",
+          "Oh no... 😳 did the camera break?",
+        ];
+        setMood(randomMoods[Math.floor(Math.random() * randomMoods.length)]);
+      } else {
+        setMood("Neutral");
       }
 
       requestAnimationFrame(detect);
@@ -50,11 +74,13 @@ const FacialDetection = () => {
   };
 
   return (
-    <div>
-      <h2>Facial Mood Detection</h2>
-      <video ref={videoRef} autoPlay playsInline className="w-96 h-auto" />
-      <canvas ref={canvasRef} className="absolute top-0 left-0 w-96 h-auto" />
-      <p>Your mood: {mood}</p>
+    <div className="relative">
+      <h2 className="text-xl font-bold">Facial Mood Detection</h2>
+      <div className="relative w-96 h-auto">
+        <video ref={videoRef} autoPlay playsInline className="w-full h-auto" />
+        <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
+      </div>
+      <p className="text-lg font-semibold mt-2">Your mood: {mood}</p>
     </div>
   );
 };
