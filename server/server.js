@@ -1,42 +1,28 @@
 const express = require("express");
-const axios = require("axios");
-const http = require("http");
 const cors = require("cors");
-const socketIo = require("socket.io");
+require("dotenv").config();
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "http://localhost:3000" } });
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// Fake AI Roast API (Replace with actual API if needed)
-const AI_API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
-const API_KEY = "your-huggingface-api-key";  // Replace with a real key if needed
-
-async function getRoastResponse(userInput) {
-    try {
-        const response = await axios.post(
-            AI_API_URL,
-            { inputs: userInput },
-            { headers: { Authorization: `Bearer ${API_KEY}` } }
-        );
-        return response.data[0]?.generated_text || "Wow, that was a terrible message.";
-    } catch (error) {
-        return "Sorry, I'm too disappointed to reply.";
-    }
-}
-
-io.on("connection", (socket) => {
-    console.log("User connected");
-
-    socket.on("chatMessage", async (message) => {
-        const response = await getRoastResponse(message);
-        socket.emit("botReply", response);
-    });
-
-    socket.on("disconnect", () => console.log("User disconnected"));
+// Root route (Fixes "Cannot GET /" issue)
+app.get("/", (req, res) => {
+  res.send("Welcome to GaslightGPT Backend!");
 });
 
-server.listen(3001, () => console.log("Backend running on port 3001"));
+// Mock API for roasting responses
+app.post("/roast", (req, res) => {
+  const { userMessage } = req.body;
+  const insults = [
+    "That's the best you got? Try harder. 😂",
+    "Wow, your brain is working overtime just to be wrong. 🤡",
+    "Did ChatGPT write that for you? Because it's awful. 🤖",
+  ];
+  const roast = insults[Math.floor(Math.random() * insults.length)];
+  res.json({ response: roast });
+});
+
+app.listen(PORT, () => console.log(`🔥 Server running on http://localhost:${PORT}`));
